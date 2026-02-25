@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String   // "PATIENT" | "DOCTOR"
+  password  String   // Mock password (do not use in real prod without hashing)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  patientProfile PatientProfile?
+  doctorProfile  DoctorProfile?
+  posts          D2DPost[]
+}
+
+model PatientProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bloodGroup String?
+  allergies  String?  // comma-separated
+  nric       String?  @unique // unique ID for QR matching
+  
+  prescriptions Prescription[]
+  labReports    LabReport[]
+}
+
+model DoctorProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  specialization String?
+  licenseNumber  String?  @unique
+  isVerified     Boolean  @default(false)
+}
+
+model Prescription {
+  id               String         @id @default(cuid())
+  patientProfileId String
+  patient          PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  doctorId         String
+  
+  medication       String
+  dosage           String
+  instructions     String?
+  date             DateTime       @default(now())
+}
+
+model LabReport {
+  id               String         @id @default(cuid())
+  patientProfileId String
+  patient          PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  
+  testName         String
+  result           String
+  date             DateTime       @default(now())
+  reportUrl        String?
+}
+
+model Camp {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  location    String
+  date        DateTime
+  type        String   // "CHECKUP" | "BLOOD_DONATION"
+  
+  createdAt   DateTime @default(now())
+}
+
+model D2DPost {
+  id        String   @id @default(cuid())
+  userId    String
+  author    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  content   String
+  type      String   // "CONSULTATION" | "STAFFING"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
